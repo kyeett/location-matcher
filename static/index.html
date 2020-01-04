@@ -36,40 +36,27 @@
         } 
       }
 
-      // Send user position to server
-      function updatePosition(user, latitude, longitude) {
+      function positionChanged(position) {
+          console.log("location has changed", position)
+          var current_user = $('#username_input').val().toLowerCase();
 
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            function(position) {
-              
-              // updatePosition(
-              //   current_user,
-              //   position.coords.latitude,
-              //   position.coords.longitude
-              // );
+          if(current_user == '') {
+            return
+          }
 
-              var data = JSON.stringify({
-          user: user,
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude
-        });
+          var data = JSON.stringify({
+            user: current_user,
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          });
 
-        var jqxhr = $.post("/positions", data, function(data) {
-          console.log("works");
-        }).fail(function() {
-          console.log("error");
-        });
-
-
-            },
-            function() { console.log("couldn't fetch geolocation"); }
-          );
-        } else { console.log("browser doesn't support geolocation"); }
-        
-
-
+          var jqxhr = $.post("/positions", data, function(data) {
+            console.log("works");
+          }).fail(function() {
+            console.log("error");
+          });
       }
+
 
       function loadDistances(user) {
             var jqxhr = $.get("/distances?user=" + user, function(data) {
@@ -108,7 +95,6 @@
         console.log("update everything");
         var current_user = $('#username_input').val().toLowerCase();
         loadDistances(current_user);
-        updatePosition(current_user);
       }
 
       function showLoadingImage(callback) {
@@ -133,6 +119,14 @@
 
         $('#find_nearby_button').prop('disabled', true);
         $('#username_input').prop('disabled', true);
+
+        // Start tracking location
+        if (navigator.geolocation) {
+          navigator.geolocation.watchPosition(
+            positionChanged,
+            function() { console.log("couldn't fetch geolocation"); }
+          );
+        } else { console.log("browser doesn't support geolocation"); }
 
         showLoadingImage(function() {
           updateEverything();
