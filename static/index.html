@@ -106,40 +106,55 @@
 
       function updateEverything() {
         console.log("update everything");
-        var current_user = $('#usernameInput').val().toLowerCase();
+        var current_user = $('#username_input').val().toLowerCase();
         loadDistances(current_user);
         updatePosition(current_user);
       }
+
+      function showLoadingImage(callback) {
+        $('#find_nearby_button').animate({opacity: 0.0}, 500, function() {
+          $('#loading_image').animate({opacity: 1.0}, 1000, callback);
+        })
+      }
       
   $(document).ready(function() {
+    // Preload image
+    new Image().src='https://cdn.dribbble.com/users/959027/screenshots/2594575/oscar_data_loop__1_.gif';
+
 
     $('#find_nearby_button').click(function() {
-        if($('#usernameInput').val() == '') {
+        if($('#username_input').val() == '') {
+          // Add input highlight
+          $('#username_input').addClass('border-danger')
           return
         }
+        // Remove input highlight
+        $('#username_input').removeClass('border-danger')
 
         $('#find_nearby_button').prop('disabled', true);
-        $('#usernameInput').prop('disabled', true);
+        $('#username_input').prop('disabled', true);
 
-
-        updateEverything();
-        setInterval(function() {
+        showLoadingImage(function() {
           updateEverything();
-        }, 3000);
+          setInterval(function() {
+            updateEverything();
+          }, 3000);
+        });
       })
   })
       
     </script>
 
     <div class="container ">
-      <!-- <div class="text-center">
+      <div class="text-center">
         <img
+        id="loading_image"
         src="https://cdn.dribbble.com/users/959027/screenshots/2594575/oscar_data_loop__1_.gif"
         height="25%"
         width="25%"
-        class
+        style="opacity: 0.0;"
         />
-      </div> -->
+      </div>
 
       <div class="col text-center mb-3 mt-3">
         <button type="button" class="btn btn-primary" id="find_nearby_button">Find nearby users</button>
@@ -148,8 +163,8 @@
 
       <div class="container text-center mb-4" >
         <center>
-            <label for="usernameInput">Name</label>
-            <input type="username" class="form-control" id="usernameInput" placeholder="Your name" style="width: 150px">
+            <label for="username_input">Name</label>
+            <input type="username" class="form-control" id="username_input" placeholder="Your name" style="width: 150px">
         </center>
       </div>
 
