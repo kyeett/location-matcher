@@ -25,7 +25,7 @@
 #   unused-packages = true
 
 [metadata.heroku]
-  root-package = "github.com/kyeett/location-tracker"
+  root-package = "github.com/kyeett/location-matcher"
   go-version = "go1.12"
   install = [ "./cmd/..."]
   ensure = "false"
