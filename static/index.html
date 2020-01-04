@@ -30,7 +30,7 @@
 
       function formatDistance(distanceMeters) {
         if(distanceMeters > 1000) {
-        return (distanceMeters / 1000).toFixed(2) + ' km';
+        return (distanceMeters / 1000).toFixed(1) + ' km';
         }  else {
           return Math.round(distanceMeters) + ' m';
         } 
@@ -69,7 +69,11 @@
 
           $.each(obj, function(key)
           {
-              var distancePanel = $('<button/>')
+            if(obj[key].user == user) {
+              return
+            }
+
+            var distancePanel = $('<button/>')
                   .attr("type", 'button')
                   .addClass('btn')
                   .addClass('btn-primary')
