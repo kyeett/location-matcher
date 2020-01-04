@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Geolocation</title>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <meta charset="utf-8" />
+    <!-- Latest compiled and minified CSS -->
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+      integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+      crossorigin="anonymous"
+    />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+      integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+      integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+      crossorigin="anonymous"
+    ></script>
+  </head>
+  <body>
+    <script>
+
+      function formatDistance(distanceMeters) {
+        if(distanceMeters > 1000) {
+        return (distanceMeters / 1000).toFixed(2) + ' km';
+        }  else {
+          return Math.round(distanceMeters) + ' m';
+        } 
+      }
+
+      // Send user position to server
+      function updatePosition(user, latitude, longitude) {
+
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            function(position) {
+              
+              // updatePosition(
+              //   current_user,
+              //   position.coords.latitude,
+              //   position.coords.longitude
+              // );
+
+              var data = JSON.stringify({
+          user: user,
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        });
+
+        var jqxhr = $.post("/positions", data, function(data) {
+          console.log("works");
+        }).fail(function() {
+          console.log("error");
+        });
+
+
+            },
+            function() { console.log("couldn't fetch geolocation"); }
+          );
+        } else { console.log("browser doesn't support geolocation"); }
+        
+
+
+      }
+
+      function loadDistances(user) {
+            var jqxhr = $.get("/distances?user=" + user, function(data) {
+          var obj = JSON.parse(data);
+          console.log(obj)
+
+          var distancesList = $('#distances')
+          var listItems = '';
+          $(distancesList).html('');
+
+          $.each(obj, function(key)
+          {
+              var distancePanel = $('<button/>')
+                  .attr("type", 'button')
+                  .addClass('btn')
+                  .addClass('btn-primary')
+                  .addClass('float-right')
+                  .text(formatDistance(obj[key].distance));
+
+              var li = $('<li/>')
+                  .addClass('list-group-item')
+                  .text(obj[key].user)
+                  .append(distancePanel)
+                  .attr('role', 'menuitem')
+                  .appendTo(distancesList);
+                });
+                
+                
+        }).fail(function(err) {
+          console.log("error", err);
+        });
+      }
+
+
+      function updateEverything() {
+        console.log("update everything");
+        var current_user = $('#usernameInput').val().toLowerCase();
+        loadDistances(current_user);
+        updatePosition(current_user);
+      }
+      
+  $(document).ready(function() {
+      updateEverything();
+      $('#find_nearby_button').click(function() {
+        if($('#usernameInput').val() == '') {
+          return
+        }
+
+        $('#find_nearby_button').prop('disabled', true);
+        $('#usernameInput').prop('disabled', true);
+
+
+        updateEverything();
+        setInterval(function() {
+          updateEverything();
+        }, 3000);
+      })
+  })
+      
+    </script>
+
+    <div class="container ">
+      <!-- <div class="text-center">
+        <img
+        src="https://cdn.dribbble.com/users/959027/screenshots/2594575/oscar_data_loop__1_.gif"
+        height="25%"
+        width="25%"
+        class
+        />
+      </div> -->
+
+      <div class="col text-center mb-3 mt-3">
+        <button type="button" class="btn btn-primary" id="find_nearby_button">Find nearby users</button>
+      </div>
+
+
+      <div class="container text-center mb-4" >
+        <center>
+            <label for="usernameInput">Username</label>
+            <input type="username" class="form-control" id="usernameInput" placeholder="Magnus" value="Magnus" style="width: 150px">
+        </center>
+      </div>
+
+
+      <ul class="list-group" id="distances">
+
+      </ul>
+
+      </div>
+    </div>
+  </body>
+</html>
