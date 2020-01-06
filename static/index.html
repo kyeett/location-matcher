@@ -29,8 +29,10 @@
     <script>
 
       function formatDistance(distanceMeters) {
-        if(distanceMeters > 1000) {
-        return (distanceMeters / 1000).toFixed(1) + ' km';
+        if(distanceMeters > 100000) {
+          return (distanceMeters / 1000).toFixed(0) + ' km';
+        } else if(distanceMeters > 1000) {
+          return (distanceMeters / 1000).toFixed(1) + ' km';
         }  else {
           return Math.round(distanceMeters) + ' m';
         } 
@@ -73,20 +75,32 @@
               return
             }
 
-            var distancePanel = $('<button/>')
-                  .attr("type", 'button')
-                  .addClass('btn')
-                  .addClass('btn-primary')
-                  .addClass('float-right')
-                  .text(formatDistance(obj[key].distance));
+            var row = $('<div class="row pb-1" />').appendTo(distancesList);
 
-              var li = $('<li/>')
-                  .addClass('list-group-item')
-                  .text(obj[key].user)
-                  .append(distancePanel)
-                  .attr('role', 'menuitem')
-                  .appendTo(distancesList);
-                });
+            // Name
+            var namePanel = $('<div/>')
+                  .addClass('col-8 col-sm-10')
+                  .html('<div class="float-left">'+obj[key].user+'</div>')
+                  .appendTo(row);
+
+            // Expired
+            if (obj[key].expired) {
+                var url = "https://static.thenounproject.com/png/1241402-200.png"
+                var distanceExpiredImg = $('<img src="'+url+'" style="height:26px" class="float-right"/>')
+                      .appendTo(namePanel);
+            }
+
+            // Distance
+            var distancePanel = $('<div/>')
+                  .addClass('col-4 col-sm-2')
+                  .appendTo(row);
+
+            var distanceBtn = $('<button/>')
+                  .attr("type", 'button')
+                  .addClass('btn btn-primary btn-block')
+                  .text(formatDistance(obj[key].distance))
+                  .appendTo(distancePanel);
+              });
                 
                 
         }).fail(function(err) {
@@ -102,9 +116,10 @@
       }
 
       function showLoadingImage(callback) {
-        $('#find_nearby_button').animate({opacity: 0.0}, 500, function() {
-          $('#loading_image').animate({opacity: 1.0}, 1000, callback);
-        })
+        $( "#find_nearby_button" ).parent().slideUp();
+        $( "#loading_image" ).show( "slow", function() {
+          callback();
+        });
       }
       
   $(document).ready(function() {
@@ -113,6 +128,7 @@
 
 
     $('#find_nearby_button').click(function() {
+
         if($('#username_input').val() == '') {
           // Add input highlight
           $('#username_input').addClass('border-danger')
@@ -136,7 +152,7 @@
           updateEverything();
           setInterval(function() {
             updateEverything();
-          }, 3000);
+          }, 2000);
         });
       })
   })
@@ -146,15 +162,14 @@
     <div class="container ">
       <div class="text-center">
         <img
+        class="img-fluid col-12 col-sm-8 col-md-4"
         id="loading_image"
         src="https://cdn.dribbble.com/users/959027/screenshots/2594575/oscar_data_loop__1_.gif"
-        height="25%"
-        width="25%"
-        style="opacity: 0.0;"
+        style="display:none; margin-bottom: -30px"
         />
       </div>
 
-      <div class="col text-center mb-3 mt-3">
+      <div class="col text-center mt-3">
         <button type="button" class="btn btn-primary" id="find_nearby_button">Find nearby users</button>
       </div>
 
@@ -167,9 +182,9 @@
       </div>
 
 
-      <ul class="list-group" id="distances">
+      <div class="container col-md-8" id="distances">
 
-      </ul>
+      </div>
 
       </div>
     </div>

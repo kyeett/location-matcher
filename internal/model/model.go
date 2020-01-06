@@ -12,6 +12,7 @@ type Position struct {
 type Distance struct {
 	User     string  `json:"user"`
 	Distance float64 `json:"distance"`
+	Expired  bool    `json:"expired"`
 }
 
 func (p *Position) RedisScan(src interface{}) error {

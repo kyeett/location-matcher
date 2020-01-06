@@ -1,15 +1,37 @@
 package redisrepo
 
 import (
+	"fmt"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/garyburd/redigo/redis"
 	locationmodel "github.com/kyeett/location-matcher/internal/model"
 )
 
+type safeMap struct {
+	m    map[string]time.Time
+	lock sync.RWMutex
+}
+
+func (m *safeMap) get(key string) time.Time {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+	return m.m[key]
+}
+
+func (m *safeMap) set(key string, t time.Time) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	m.m[key] = t
+	fmt.Println("set", key, m.m[key])
+}
+
 type LocationServer struct {
 	keyName string
 	*redis.Pool
+	positionLastSeen safeMap
 }
 
 func New(redisURL string, keyName string) (*LocationServer, error) {
@@ -27,6 +49,10 @@ func New(redisURL string, keyName string) (*LocationServer, error) {
 	return &LocationServer{
 		Pool:    pool,
 		keyName: keyName,
+		positionLastSeen: safeMap{
+			m:    map[string]time.Time{},
+			lock: sync.RWMutex{},
+		},
 	}, nil
 }
 
@@ -38,6 +64,8 @@ func (s *LocationServer) SetPosition(user string, pos locationmodel.Position) er
 	if err != nil {
 		return err
 	}
+
+	s.positionLastSeen.set(user, time.Now())
 	return nil
 }
 
@@ -67,11 +95,11 @@ func (s *LocationServer) GetAllPositions() (map[string]locationmodel.Position, e
 	return positions, nil
 }
 
-func (s *LocationServer) GetDistancesFrom(user string, maxDistanceKM float64) ([]locationmodel.Distance, error) {
+func (s *LocationServer) GetDistancesFrom(u string, maxDistanceKM float64) ([]locationmodel.Distance, error) {
 	c := s.Pool.Get()
 	defer c.Close()
 
-	values, err := redis.Values(c.Do("GEORADIUSBYMEMBER", s.keyName, "user:"+user, maxDistanceKM, "m", "WITHDIST", "ASC"))
+	values, err := redis.Values(c.Do("GEORADIUSBYMEMBER", s.keyName, "user:"+u, maxDistanceKM, "m", "WITHDIST", "ASC"))
 	if err != nil {
 		return nil, err
 	}
@@ -88,9 +116,14 @@ func (s *LocationServer) GetDistancesFrom(user string, maxDistanceKM float64) ([
 		}
 
 		user = strings.ReplaceAll(user, "user:", "")
+
+		// Check if position has expired
+		expired := s.positionLastSeen.get(user).Before(time.Now().Add(-600 * time.Second))
+
 		distances = append(distances, locationmodel.Distance{
 			User:     user,
 			Distance: dist,
+			Expired:  expired,
 		})
 	}
 	return distances, nil
